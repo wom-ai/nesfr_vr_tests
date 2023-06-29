@@ -6,6 +6,9 @@
 #  - https://github.com/ros2/ros2cli/blob/rolling/ros2action/ros2action/verb/send_goal.py
 #  - https://github.com/ROBOTIS-GIT/turtlebot3/blob/galactic-devel/turtlebot3_example/turtlebot3_example/turtlebot3_patrol_server/turtlebot3_patrol_server.py
 #  - https://docs.ros2.org/foxy/api/rclpy/api/execution_and_callbacks.html#module-rclpy.callback_groups
+# important
+#  - https://github.com/ros2/examples/issues/271
+#  - https://github.com/ros2/examples/blob/galactic/rclpy/actions/minimal_action_server/examples_rclpy_minimal_action_server/server_defer.py
 #
 import time
 
@@ -34,6 +37,10 @@ class NesfrVRDummyNavActionServer(Node):
             cancel_callback=self.cancel_callback,
         )
         self.get_logger().info('Dummy Nav Action Server get started')
+
+    def destroy(self):
+        self._action_server.destroy()
+        super().destroy_node()
 
     def goal_callback(self, goal_request):
         self.get_logger().info('Goal callback...')
@@ -74,8 +81,12 @@ def main(args=None):
     action_server = NesfrVRDummyNavActionServer()
     executor = MultiThreadedExecutor()
     try:
+        #
+        # TODO or FIXME
+        # Why we need MultiThreadedExecutor for cancel
+        #  reference: https://github.com/ros2/examples/blob/galactic/rclpy/actions/minimal_action_server/examples_rclpy_minimal_action_server/server_defer.py
+        #
         rclpy.spin(action_server, executor=executor)
-        #rclpy.spin(action_server)
     except KeyboardInterrupt:
         action_server.get_logger().info(' shutting down by KeyboardInterrupt')
 
