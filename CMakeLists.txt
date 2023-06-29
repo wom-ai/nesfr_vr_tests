@@ -25,6 +25,9 @@ target_include_directories(nesfr_vr_cpp_test PUBLIC
   $<INSTALL_INTERFACE:include>)
 target_compile_features(nesfr_vr_cpp_test PUBLIC c_std_99 cxx_std_17)  # Require C99 and C++17
 
+install(DIRECTORY launch
+  DESTINATION share/${PROJECT_NAME})
+
 install(TARGETS nesfr_vr_cpp_test
   DESTINATION lib/${PROJECT_NAME})
 

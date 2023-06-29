@@ -46,6 +46,7 @@ class NesfrVRDummyStateMachine(Node):
 
         self._seed = 0
 
+        self.get_logger().info('Dummy State Machine get started')
         self._state = None
 
     def _listener_callback(self, msg):
