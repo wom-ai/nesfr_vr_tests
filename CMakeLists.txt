@@ -7,6 +7,11 @@ endif()
 
 # find dependencies
 find_package(ament_cmake REQUIRED)
+find_package(ament_cmake_python REQUIRED)
+find_package(rclpy REQUIRED)
+find_package(std_msgs REQUIRED)
+find_package(bstar_ros REQUIRED)
+
 # uncomment the following section in order to fill in
 # further dependencies manually.
 # find_package(<dependency> REQUIRED)
@@ -19,6 +24,18 @@ target_compile_features(nesfr_vr_cpp_test PUBLIC c_std_99 cxx_std_17)  # Require
 
 install(TARGETS nesfr_vr_cpp_test
   DESTINATION lib/${PROJECT_NAME})
+
+#
+# reference: https://roboticsbackend.com/ros2-package-for-both-python-and-cpp-nodes/
+#
+# Install Python modules
+ament_python_install_package(${PROJECT_NAME})
+
+# Install Python executables
+install(PROGRAMS
+  scripts/nesfr_vr_dummy_state_machine.py
+  DESTINATION lib/${PROJECT_NAME}
+)
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
