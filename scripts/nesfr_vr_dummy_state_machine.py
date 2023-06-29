@@ -19,7 +19,14 @@ class RobotStateCmd(IntEnum):
     MAX_NUM              =  4
     NONE                 = 255
 
-class RobotState(IntEnum):
+robot_state_cmd_str = {
+        RobotStateCmd.MANUAL:               "Manual",
+        RobotStateCmd.PROTECTIVE_MANUAL:    "Protective Manual",
+        RobotStateCmd.AUTONOMOUS:           "Autonomous",
+        RobotStateCmd.TRACKING:             "Tracking",
+    }
+
+class RobotSystemState(IntEnum):
     OFF                 = 0
     IDLE                = 1
     MANUAL              = 2
@@ -28,6 +35,16 @@ class RobotState(IntEnum):
     EMERGENCY           = 5
     TRACKING            = 6
     MAX                 = 7
+
+robot_system_state_str = {
+        RobotSystemState.OFF:       "Off",
+        RobotSystemState.IDLE:      "Idle",
+        RobotSystemState.MANUAL:    "Manual",
+        RobotSystemState.PROTECTIVE_MANUAL: "Protective Manual",
+        RobotSystemState.AUTONOMOUS:"Autonomous",
+        RobotSystemState.EMERGENCY: "Emergency",
+        RobotSystemState.TRACKING:  "Tracking",
+    }
 
 class WarningLevel(IntEnum):
     NONE                    = 0
@@ -47,7 +64,7 @@ class NesfrVRDummyStateMachine(Node):
         self._seed = 0
 
         self.get_logger().info('Dummy State Machine get started')
-        self._state = None
+        self._state = RobotStateCmd.MANUAL
 
     def _listener_callback(self, msg):
         state = msg.data
@@ -57,23 +74,23 @@ class NesfrVRDummyStateMachine(Node):
 
         is_state_changed = False
         if self._state != state:
-            self.get_logger().info('state changes {} -> {}'.format(self._state, state))
+            self.get_logger().info('state changes {} -> {}'.format(robot_state_cmd_str[self._state], robot_state_cmd_str[state]))
             self._state = state
             time.sleep(2.0)
             is_state_changed = True
 
-        system_state = RobotState.OFF
+        system_state = RobotSystemState.OFF
         warning_level = WarningLevel.NONE
         if state == RobotStateCmd.MANUAL:
-            system_state = RobotState.MANUAL
+            system_state = RobotSystemState.MANUAL
         elif state == RobotStateCmd.PROTECTIVE_MANUAL:
-            system_state = RobotState.PROTECTIVE_MANUAL
+            system_state = RobotSystemState.PROTECTIVE_MANUAL
             warning_level = (self._seed%WarningLevel.MAX)
             if is_state_changed: self._seed += 1
         elif state == RobotStateCmd.AUTONOMOUS:
-            system_state = RobotState.AUTONOMOUS
+            system_state = RobotSystemState.AUTONOMOUS
         elif state == RobotStateCmd.TRACKING:
-            system_state = RobotState.TRACKING
+            system_state = RobotSystemState.TRACKING
         out_msg.system_state = int(system_state)
         out_msg.state_msg = "this is dummy msg"
         self._system_state_publisher.publish(out_msg)
