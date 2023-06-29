@@ -11,6 +11,9 @@ find_package(ament_cmake_python REQUIRED)
 find_package(rclpy REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(bstar_ros REQUIRED)
+find_package(geometry_msgs REQUIRED)
+find_package(nav2_msgs REQUIRED)
+
 
 # uncomment the following section in order to fill in
 # further dependencies manually.
@@ -34,6 +37,7 @@ ament_python_install_package(${PROJECT_NAME})
 # Install Python executables
 install(PROGRAMS
   scripts/nesfr_vr_dummy_state_machine.py
+  scripts/nesfr_vr_dummy_nav_action_server.py
   DESTINATION lib/${PROJECT_NAME}
 )
 
