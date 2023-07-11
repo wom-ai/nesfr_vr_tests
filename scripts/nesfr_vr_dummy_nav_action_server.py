@@ -8,7 +8,7 @@
 #  - https://docs.ros2.org/foxy/api/rclpy/api/execution_and_callbacks.html#module-rclpy.callback_groups
 # important
 #  - https://github.com/ros2/examples/issues/271
-#  - https://github.com/ros2/examples/blob/galactic/rclpy/actions/minimal_action_server/examples_rclpy_minimal_action_server/server_defer.py
+#  - https://github.com/ros2/examples/blob/galactic/rclpy/actions/minimal_action_server/examples_rclpy_minimal_action_server/server.py
 #
 import time
 
@@ -18,6 +18,7 @@ from rclpy.action import GoalResponse
 from rclpy.action import CancelResponse
 from rclpy.callback_groups import ReentrantCallbackGroup
 from rclpy.executors import MultiThreadedExecutor
+from rclpy.executors import SingleThreadedExecutor
 from rclpy.node import Node
 
 from nav2_msgs.action import NavigateToPose
@@ -51,7 +52,7 @@ class NesfrVRDummyNavActionServer(Node):
         self.get_logger().info('Canceling...')
         return CancelResponse.ACCEPT
 
-    def execute_callback(self, goal_handle):
+    async def execute_callback(self, goal_handle):
         self.get_logger().info('Executing goal...')
 
         feedback_msg = NavigateToPose.Feedback()
@@ -84,7 +85,7 @@ def main(args=None):
         #
         # TODO or FIXME
         # Why we need MultiThreadedExecutor for cancel
-        #  reference: https://github.com/ros2/examples/blob/galactic/rclpy/actions/minimal_action_server/examples_rclpy_minimal_action_server/server_defer.py
+        #  reference: https://github.com/ros2/examples/blob/galactic/rclpy/actions/minimal_action_server/examples_rclpy_minimal_action_server/server.py
         #
         rclpy.spin(action_server, executor=executor)
     except KeyboardInterrupt:
