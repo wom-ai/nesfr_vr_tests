@@ -1,49 +1,25 @@
 #!/bin/python3
 
+import sys
 import time
 
 import rclpy
+from rclpy.executors import ExternalShutdownException
 from rclpy.node import Node
 
 from std_msgs.msg import Int32
-from bstar_ros.msg import NesfrSystemState
-from bstar_ros.msg import CollisionWarning
 
+from wom_ros_interfaces.msg import DriveMode
+from wom_ros_interfaces.srv import ChangeDriveMode
 from enum import IntEnum
 
-class RobotStateCmd(IntEnum):
-    MANUAL               =  0
-    PROTECTIVE_MANUAL    =  1
-    AUTONOMOUS           =  2
-    TRACKING             =  3
-    MAX_NUM              =  4
-    NONE                 = 255
-
-robot_state_cmd_str = {
-        RobotStateCmd.MANUAL:               "Manual",
-        RobotStateCmd.PROTECTIVE_MANUAL:    "Protective Manual",
-        RobotStateCmd.AUTONOMOUS:           "Autonomous",
-        RobotStateCmd.TRACKING:             "Tracking",
-    }
-
-class RobotSystemState(IntEnum):
-    OFF                 = 0
-    IDLE                = 1
-    MANUAL              = 2
-    PROTECTIVE_MANUAL   = 3
-    AUTONOMOUS          = 4
-    EMERGENCY           = 5
-    TRACKING            = 6
-    MAX                 = 7
-
-robot_system_state_str = {
-        RobotSystemState.OFF:       "Off",
-        RobotSystemState.IDLE:      "Idle",
-        RobotSystemState.MANUAL:    "Manual",
-        RobotSystemState.PROTECTIVE_MANUAL: "Protective Manual",
-        RobotSystemState.AUTONOMOUS:"Autonomous",
-        RobotSystemState.EMERGENCY: "Emergency",
-        RobotSystemState.TRACKING:  "Tracking",
+drive_mode_str = {
+        DriveMode.OFF:                  "Off",
+        DriveMode.IDLE:                 "Idle",
+        DriveMode.MANUAL:               "Manual",
+        DriveMode.PROTECTIVE_MANUAL:    "Protective Manual",
+        DriveMode.ASSISTED_MANUAL:      "Assisted Manual",
+        DriveMode.SELF_DRIVING:           "Autonomous",
     }
 
 class WarningLevel(IntEnum):
@@ -57,64 +33,70 @@ class NesfrVRDummyStateMachine(Node):
     def __init__(self):
         super().__init__('dummy_state_machine')
 
-        self._system_state_publisher = self.create_publisher(NesfrSystemState, 'system_state', 10)
-        self._collision_warning_publisher = self.create_publisher(CollisionWarning, 'collision_warning', 10)
-        self._subscription = self.create_subscription(Int32, 'state', self._listener_callback,1)
+        self.drive_mode_pub_            = self.create_publisher(DriveMode, "drive_mode", 1);
+        self.change_drive_mode_srv_     = self.create_service(ChangeDriveMode, "change_drive_mode", self.change_drive_mode);
+        self.timer_                     = self.create_timer(0.1, self.publish_drive_mode);
 
-        self._seed = 0
-
+        self.drive_mode_ = DriveMode.OFF
         self.get_logger().info('Dummy State Machine get started')
-        self._state = RobotStateCmd.MANUAL
 
-    def _listener_callback(self, msg):
-        state = msg.data
-        #self.get_logger().info('_listener_callback() I heard: {}'.format(msg.data))
+    def publish_drive_mode(self):
+        #self.get_logger().info('publish_drive_mode() publish {}'.format(drive_mode_str[self.drive_mode_]))
+        msg = DriveMode()
+        msg.mode = self.drive_mode_
+        self.drive_mode_pub_.publish(msg)
 
-        out_msg = NesfrSystemState()
+    def change_drive_mode(self, request, response):
 
-        is_state_changed = False
-        if self._state != state:
-            self.get_logger().info('state changes {} -> {}'.format(robot_state_cmd_str[self._state], robot_state_cmd_str[state]))
-            self._state = state
-            time.sleep(2.0)
-            is_state_changed = True
+        if request.mode.mode == DriveMode.OFF:
+            response.success = True
+            response.message = "Driving is off now!"
+            self.drive_mode_ = request.mode.mode
+        elif request.mode.mode == DriveMode.IDLE:
+            response.success = True
+            response.message = "Driving is idel now!"
+            self.drive_mode_ = request.mode.mode
+        elif request.mode.mode == DriveMode.MANUAL:
+            response.success = True
+            response.message = "Driving is in manual mode now!"
+            self.drive_mode_ = request.mode.mode
+        elif request.mode.mode == DriveMode.PROTECTIVE_MANUAL:
+            response.success = True
+            response.message = "Driving is in protective manual mode now!"
+            self.drive_mode_ = request.mode.mode
+        elif request.mode.mode == DriveMode.ASSISTED_MANUAL:
+            response.success = True
+            response.message = "Driving is in assisted manual mode now!"
+            self.drive_mode_ = request.mode.mode
+        elif request.mode.mode == DriveMode.SELF_DRIVING:
+            response.success = True
+            response.message = "Driving is in self driving mode now!"
+            self.drive_mode_ = request.mode.mode
+        else:
+            response.success = False
+            response.message = "Mode not implemented yet!"
 
-        system_state = RobotSystemState.OFF
-        warning_level = WarningLevel.NONE
-        if state == RobotStateCmd.MANUAL:
-            system_state = RobotSystemState.MANUAL
-        elif state == RobotStateCmd.PROTECTIVE_MANUAL:
-            system_state = RobotSystemState.PROTECTIVE_MANUAL
-            warning_level = (self._seed%WarningLevel.MAX)
-            if is_state_changed: self._seed += 1
-        elif state == RobotStateCmd.AUTONOMOUS:
-            system_state = RobotSystemState.AUTONOMOUS
-        elif state == RobotStateCmd.TRACKING:
-            system_state = RobotSystemState.TRACKING
-        out_msg.system_state = int(system_state)
-        out_msg.state_msg = "this is dummy msg"
-        self._system_state_publisher.publish(out_msg)
+        self.get_logger().info(response.message)
+        self.get_logger().info('change_drive_mode({}) return {}'.format(request, response))
+        return response
 
-
-        out_msg = CollisionWarning()
-        out_msg.warning_level = int(warning_level)
-        self._collision_warning_publisher.publish(out_msg)
-
-import sys
 def main(args=None):
     rclpy.init(args=args)
 
-    print("args={}".format(args))
     node = NesfrVRDummyStateMachine()
 
+    #
+    # reference: https://github.com/ros2/demos/blob/humble/demo_nodes_py/demo_nodes_py/topics/talker.py
+    #
     try:
         rclpy.spin(node)
+    except ExternalShutdownException:
+        sys.exit(1)
     except KeyboardInterrupt:
         node.get_logger().info(' shutting down by KeyboardInterrupt')
 
     node.destroy_node()
-    rclpy.shutdown()
-
+    rclpy.try_shutdown()
 
 if __name__ == '__main__':
     main()

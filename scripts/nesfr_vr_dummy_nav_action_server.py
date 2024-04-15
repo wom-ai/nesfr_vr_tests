@@ -10,6 +10,7 @@
 #  - https://github.com/ros2/examples/issues/271
 #  - https://github.com/ros2/examples/blob/galactic/rclpy/actions/minimal_action_server/examples_rclpy_minimal_action_server/server.py
 #
+import sys
 import time
 
 import rclpy
@@ -19,6 +20,7 @@ from rclpy.action import CancelResponse
 from rclpy.callback_groups import ReentrantCallbackGroup
 from rclpy.executors import MultiThreadedExecutor
 from rclpy.executors import SingleThreadedExecutor
+from rclpy.executors import ExternalShutdownException
 from rclpy.node import Node
 
 from nav2_msgs.action import NavigateToPose
@@ -88,11 +90,13 @@ def main(args=None):
         #  reference: https://github.com/ros2/examples/blob/galactic/rclpy/actions/minimal_action_server/examples_rclpy_minimal_action_server/server.py
         #
         rclpy.spin(action_server, executor=executor)
+    except ExternalShutdownException:
+        sys.exit(1)
     except KeyboardInterrupt:
         action_server.get_logger().info(' shutting down by KeyboardInterrupt')
 
     action_server.destroy_node()
-    rclpy.shutdown()
+    rclpy.try_shutdown()
 
 if __name__ == '__main__':
     main()
